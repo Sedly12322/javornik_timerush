@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_background/flutter_background.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,6 +23,7 @@ void main() async {
   await initializeDateFormatting('cs_CZ', null); // Inicializace pro českou lokalitu
   runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   @override
@@ -371,6 +373,21 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Future<void> resetStartTime() async {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .update({
+        'start_time': FieldValue.delete(), // Tímto odstraníte klíč z dokumentu
+      });
+      print("Start time reset successfully");
+    } catch (e) {
+      print("Error resetting start time: $e");
+    }
+  }
 
   // Funkce pro načítání hor z Firestore (včetně tras)
   Future<void> _loadMountains() async {
@@ -456,6 +473,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Funkce pro navigaci do nové obrazovky
   void _navigateToNavigationScreen() {
+    resetStartTime();
     if (_selectedRoute == null) {
       // Pokud není vybraná trasa, zobrazí se Snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -494,55 +512,95 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+// Funkce pro získání aktuální polohy
+  Future<Position> _getCurrentPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Zkontrolujte, zda jsou služby určování polohy povoleny
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Služby určování polohy nejsou povoleny.');
+    }
+
+    // Požádejte o oprávnění k poloze
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Oprávnění k poloze bylo zamítnuto.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Oprávnění k poloze je trvale zamítnuto.');
+    }
+
+    // Získejte aktuální polohu
+    return await Geolocator.getCurrentPosition();
+  }
+
+// Upravená metoda pro získání počasí
   Future<void> _fetchWeather() async {
-    final apiKey = "f8b639faa2109c23051daa0a4b532182";  // Ujistěte se, že máte správný API klíč
-    final latitude = 50.0755;  // Příklad: zeměpisná šířka
-    final longitude = 14.4378;  // Příklad: zeměpisná délka
+    final apiKey = "f8b639faa2109c23051daa0a4b532182";
 
-    final response = await http.get(Uri.parse(
-        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric'
-    ));
+    try {
+      // Získejte aktuální polohu
+      Position position = await _getCurrentPosition();
+      final latitude = position.latitude;
+      final longitude = position.longitude;
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final weather = data['weather'][0]; // Získání informací o počasí
-      final main = data['main']; // Získání údajů o teplotě
-      final wind = data['wind']; // Získání údajů o větru
+      final response = await http.get(Uri.parse(
+          'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric'
+      ));
 
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final weather = data['weather'][0];
+        final main = data['main'];
+        final wind = data['wind'];
+
+        setState(() {
+          _weatherIconUrl = "http://openweathermap.org/img/wn/${weather['icon']}@2x.png";
+          _currentTemperature = "${main['temp']}°C";
+          _weatherDescription = "${weather['description']}, vítr: ${wind['speed']} m/s";
+          _currentPosition = LatLng(latitude, longitude); // Aktualizace aktuální pozice
+        });
+      } else {
+        setState(() {
+          _weatherIconUrl = "";
+          _currentTemperature = "Chyba při načítání počasí";
+          _weatherDescription = "";
+        });
+      }
+    } catch (e) {
+      print('Chyba při načítání počasí: $e');
       setState(() {
-        _weatherIconUrl = "http://openweathermap.org/img/wn/${weather['icon']}@2x.png";
-        _currentTemperature = "${main['temp']}°C";  // Teplota v °C
-        _weatherDescription = weather['description'];  // Popis počasí
-
-        // Formátovaný text pro "Feels like" a vítr
-        String feelsLike = "Feels like ${main['feels_like']}°C";
-        String windSpeed = "Wind: ${wind['speed']} m/s";
-
-        _weatherDescription = "$feelsLike. ${_weatherDescription.capitalize()}. $windSpeed";
-      });
-    } else {
-      setState(() {
-        _weatherIconUrl = "";  // V případě chyby, ikona nebude
+        _weatherIconUrl = "";
         _currentTemperature = "Chyba při načítání počasí";
-        _weatherDescription = "";  // Popis počasí
+        _weatherDescription = "";
       });
     }
   }
+
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Mapa s výběrem destinace"),
+        title: Image.asset("assets/images/logofinal.png",
+        width: 130,),
         backgroundColor: Color.fromRGBO(200, 228, 255, 1),
         actions: [
           IconButton(
+            color: Colors.white,
             icon: Icon(Icons.leaderboard),
             onPressed: _navigateToLeaderboard,
           ),
           IconButton(
             icon: Icon(Icons.exit_to_app),
+            color: Colors.white,
             onPressed: () async {
               await _auth.signOut();
               Navigator.pushReplacement(
@@ -584,6 +642,13 @@ class _MainScreenState extends State<MainScreen> {
                     height: 60,
                     padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1), // Jemný stín
+                          blurRadius: 5,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20.0),
                     ),
@@ -842,14 +907,15 @@ class NavigationScreen extends StatefulWidget {
   _NavigationScreenState createState() => _NavigationScreenState();
 }
 
-class _NavigationScreenState extends State<NavigationScreen> {
+class _NavigationScreenState extends State<NavigationScreen> with WidgetsBindingObserver {
   bool _serviceEnabled = false;
   LocationPermission? _permission;
   late StreamSubscription<Position> _positionStreamSubscription;
   Position? _currentPosition;
   bool _isNearStart = false; // Flag pro kontrolu blízkosti startu
-  bool _isTimerRunning = false; // Stav stopky (běží nebo pozastavená)
-  Stopwatch _stopwatch = Stopwatch(); // Stopky
+  bool _isTimerRunning = false; // Stav časovače (běží nebo pozastavený)
+  Duration _elapsedDuration = Duration.zero; // Nahradí Stopwatch
+  DateTime? _startTime; // Čas startu pro výpočet duration
   late LatLng _startPoint; // Startovací bod trasy
   late LatLng _endPoint; // Poslední bod trasy
   Timer? _timer; // Timer pro pravidelnou aktualizaci času
@@ -858,29 +924,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Přidání observeru
+    _getPositionStream();
     _checkGpsPermission();
-  }
-
-  Future<void> enableBackgroundExecution() async {
-    const androidConfig = FlutterBackgroundAndroidConfig(
-      notificationTitle: "Background Service",
-      notificationText: "Measuring time in the background",
-      notificationImportance: AndroidNotificationImportance.normal,
-    );
-
-    bool hasPermission = await FlutterBackground.hasPermissions;
-    if (!hasPermission) {
-      hasPermission = await FlutterBackground.initialize(androidConfig: androidConfig);
-    }
-
-    if (hasPermission) {
-      await FlutterBackground.enableBackgroundExecution();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resumeTimerAfterLock();
+    });
   }
 
   Future<void> _saveClimbOutput(String userId, String mountainId, String routeId, String time) async {
     try {
-      // Hledáme existující záznam pro daného uživatele, horu a trasu
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
@@ -890,27 +943,21 @@ class _NavigationScreenState extends State<NavigationScreen> {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        // Existuje záznam, porovnáme čas
         DocumentSnapshot doc = snapshot.docs.first;
-        String existingTime = doc['time']; // Předchozí čas, který je uložen v databázi
-
-        // Převeď čas na Duration pro porovnání
+        String existingTime = doc['time'];
         Duration newTimeDuration = _parseTimeToDuration(time);
         Duration existingTimeDuration = _parseTimeToDuration(existingTime);
 
-        // Porovnáme časy: pokud je nový čas lepší (kratší), přepíšeme
         if (newTimeDuration < existingTimeDuration) {
-          // Aktualizace záznamu
           await FirebaseFirestore.instance
               .collection('users')
               .doc(userId)
               .collection('climbs')
-              .doc(doc.id)  // ID existujícího záznamu
+              .doc(doc.id)
               .update({
-            'time': time,  // Nový čas
-            'date': DateTime.now(),  // Datum aktualizace
+            'time': time,
+            'date': DateTime.now(),
           });
-
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Výstup byl aktualizován!'),
           ));
@@ -920,15 +967,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
           ));
         }
       } else {
-        // Pokud neexistuje záznam, uložíme nový výstup
-        await FirebaseFirestore.instance.collection('users').doc(userId)
-            .collection('climbs').add({
+        await FirebaseFirestore.instance.collection('users').doc(userId).collection('climbs').add({
           'mountainID': mountainId,
           'trailID': routeId,
           'time': time,
           'date': DateTime.now(),
         });
-
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Výstup úspěšně uložen!'),
         ));
@@ -942,17 +986,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Duration _parseTimeToDuration(String time) {
-    // Předpokládáme, že čas je ve formátu "mm:ss"
     List<String> parts = time.split(':');
     int minutes = int.parse(parts[0]);
     int seconds = int.parse(parts[1]);
     return Duration(minutes: minutes, seconds: seconds);
   }
 
-
-
-
-  // Funkce pro výpočet vzdálenosti mezi dvěma body
   double _calculateDistance(LatLng point1, LatLng point2) {
     return Geolocator.distanceBetween(
       point1.latitude, point1.longitude,
@@ -960,7 +999,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  // Funkce pro kontrolu, zda je uživatel blízko startu trasy
   void _checkProximityToStart(LatLng startPoint) {
     if (_currentPosition != null) {
       double distance = _calculateDistance(
@@ -968,7 +1006,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         startPoint,
       );
       setState(() {
-        _isNearStart = distance < 10; // Pokud je vzdálenost menší než 10 metrů, zobrazí se tlačítko Start
+        _isNearStart = distance < 10;
       });
     }
   }
@@ -980,28 +1018,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
         endPoint,
       );
 
-      // Pokud je uživatel blízko posledního bodu trasy, zastavíme stopky
       if (distance < 10 && _isTimerRunning) {
+        _stopTimer();
         setState(() {
-          _stopwatch.stop();
           _isTimerRunning = false;
-          _elapsedTime = _formatElapsedTime(_stopwatch.elapsed); // Uložení uběhlého času
+          _elapsedTime = _formatElapsedTime(_elapsedDuration);
         });
 
-        // Zastavit Timer
         _timer?.cancel();
-        print("Stopky zastaveny. Uživatelská poloha: $distance m od posledního bodu.");
+        print("Časovač zastaven. Uživatelská poloha: $distance m od posledního bodu.");
 
-        // Zavolání zápisu do Firestore
-        // Předpokládejme, že už máš nějaké ID uživatele, tady použijeme "userId"
-        String userId = FirebaseAuth.instance.currentUser!.uid;  // To by měl být ID přihlášeného uživatele
+        String userId = FirebaseAuth.instance.currentUser!.uid;
         _saveClimbOutput(userId, widget.selectedMountain, widget.selectedRoute, _elapsedTime);
       }
     }
   }
 
-
-  // Funkce pro kontrolu GPS a oprávnění
   Future<void> _checkGpsPermission() async {
     _serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!_serviceEnabled) {
@@ -1025,21 +1057,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
     _getPositionStream();
   }
 
-  // Stream pro aktuální pozici
   void _getPositionStream() {
     LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high, // Nastavení vysoké přesnosti
-      distanceFilter: 1, // Zajistíme, že budeme dostávat polohu každých 1 metr (můžete přizpůsobit)
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 1,
     );
 
-    _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen((Position position) {
+    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position position) {
       setState(() {
         _currentPosition = position;
       });
 
-      // Kontrola blízkosti k startovnímu bodu a poslednímu bodu trasy
       if (_currentPosition != null) {
         _checkProximityToStart(_startPoint);
         _checkProximityToEnd(_endPoint);
@@ -1047,22 +1075,88 @@ class _NavigationScreenState extends State<NavigationScreen> {
     });
   }
 
-  // Funkce pro spuštění stopky a Timeru
-  void _startTimer() {
+  void _startTimer() async {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    _startTime = DateTime.now();
+
     setState(() {
-      _stopwatch.start();
+      _elapsedDuration = Duration.zero; // Reset času
       _isTimerRunning = true;
     });
 
-    // Timer pro aktualizaci času každou sekundu
+    _timer?.cancel();
     _timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
-        // Tímto způsobem pravidelně aktualizujeme čas
+        if (_startTime != null) {
+          _elapsedDuration = DateTime.now().difference(_startTime!);
+        }
       });
     });
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUserId).set({
+        'start_time': _startTime!.toIso8601String(),
+        'is_running': true,
+      }, SetOptions(merge: true));
+      print("Čas úspěšně uložen.");
+    } catch (e) {
+      print("Chyba při ukládání startu: $e");
+    }
   }
 
-  // Funkce pro formátování uběhlého času do formátu "mm:ss"
+  void _stopTimer() {
+    setState(() {
+      _isTimerRunning = false;
+      _elapsedTime = _formatElapsedTime(_elapsedDuration);
+    });
+
+    _timer?.cancel();
+
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    FirebaseFirestore.instance.collection('users').doc(currentUserId).set({
+      'is_running': false,
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _resumeTimerAfterLock() async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+
+      if (snapshot.exists && snapshot.data()?.containsKey('start_time') == true) {
+        final savedStartTime = DateTime.parse(snapshot.data()!['start_time']);
+        final bool isRunning = snapshot.data()!['is_running'] ?? false;
+
+        setState(() {
+          _startTime = savedStartTime;
+          if (isRunning) {
+            _elapsedDuration = DateTime.now().difference(_startTime!); // Nastavíme ihned uplynulý čas
+            _isTimerRunning = true;
+            _timer?.cancel();
+            _timer = Timer.periodic(Duration(seconds: 1), (_) {
+              setState(() {
+                _elapsedDuration = DateTime.now().difference(_startTime!);
+              });
+            });
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Čas obnoven! Uplynulý čas: ${_formatElapsedTime(_elapsedDuration)}'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        print("Čas obnoven. Uplynulý čas: $_elapsedDuration");
+      }
+    } catch (e) {
+      print("Chyba při obnově času: $e");
+    }
+  }
+
   String _formatElapsedTime(Duration elapsed) {
     int minutes = elapsed.inMinutes;
     int seconds = elapsed.inSeconds % 60;
@@ -1071,9 +1165,20 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   void dispose() {
-    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _positionStreamSubscription.cancel();
-    _timer?.cancel(); // Zastavení Timeru při zničení widgetu
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print("Aplikace byla obnovena");
+      _resumeTimerAfterLock();
+    } else if (state == AppLifecycleState.paused) {
+      print("Aplikace byla pozastavena");
+    }
   }
 
   @override
@@ -1089,114 +1194,164 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        foregroundColor: Colors.white,
+        titleTextStyle: TextStyle(fontSize: 25),
+        backgroundColor: Color.fromRGBO(200, 228, 255, 1),
         title: Text('Navigace - ${widget.selectedMountain}'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text('Vybraná trasa: ${widget.selectedRoute}'),
-            SizedBox(height: 40),
-            if (_serviceEnabled &&
-                (_permission == LocationPermission.whileInUse ||
-                    _permission == LocationPermission.always))
-              _currentPosition != null
-                  ? Text('Aktuální poloha: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}')
-                  : CircularProgressIndicator(),
-            if (!_serviceEnabled)
-              Text('GPS služba není povolena', style: TextStyle(color: Colors.red)),
-            if (_permission == LocationPermission.denied)
-              Text('Povolení k poloze je zamítnuto', style: TextStyle(color: Colors.red)),
-            Expanded(
-              child: FutureBuilder<List<LatLng>>(
-                future: widget.selectedPolyline,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Chyba při získávání trasy'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('Vyberte trasu pro zobrazení'));
-                  }
-
-                  final route = snapshot.data!;
-                  _startPoint = route.first; // Nastavení počátečního bodu trasy
-                  _endPoint = route.last; // Nastavení posledního bodu trasy
-
-                  return FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      initialZoom: 14.0,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color.fromRGBO(200, 228, 255, 1), Color(0xFF58AEFD)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
                     ),
+                  ],
+                ),
+                child: RichText(
+                  text: TextSpan(
+                    text: 'Vybraná trasa: ',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
                     children: [
-                      TileLayer(
-                        urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c'],
-                      ),
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: route,
-                            strokeWidth: 4.0,
-                            color: Colors.blue,
-                          ),
-                        ],
-                      ),
-                      CurrentLocationLayer(
-                        followOnLocationUpdate: FollowOnLocationUpdate.always,
-                        style: LocationMarkerStyle(
-                          marker: const DefaultLocationMarker(
-                            child: Icon(
-                              Icons.navigation,
-                              color: Colors.white,
-                            ),
-                          ),
-                          markerSize: const Size(40, 40),
-                          markerDirection: MarkerDirection.heading,
+                      TextSpan(
+                        text: '${widget.selectedRoute}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
                       ),
                     ],
-                  );
-                },
-              ),
-            ),
-            // Zobrazení tlačítka Start pokud je uživatel blízko startu trasy
-            if (_isNearStart && !_isTimerRunning)
-              ElevatedButton(
-                onPressed: () {
-                  // Spustit stopky při stisknutí tlačítka Start
-                  print("Start!");
-                  enableBackgroundExecution();
-                  _startTimer();
-                },
-                child: Text("Start"),
-              ),
-            // Zobrazení času
-            if (_isTimerRunning)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  'Čas: ${_stopwatch.elapsed.inMinutes}:${(_stopwatch.elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
-                  style: TextStyle(fontSize: 24),
+                  ),
                 ),
               ),
-            // Zobrazení uběhlého času po zastavení stopky
-            if (!_isTimerRunning && _elapsedTime.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  'Uběhlý čas: $_elapsedTime',
-                  style: TextStyle(fontSize: 24, color: Colors.green),
+              SizedBox(height: 20),
+              if (_serviceEnabled &&
+                  (_permission == LocationPermission.whileInUse || _permission == LocationPermission.always))
+                SizedBox.shrink(),
+              if (!_serviceEnabled)
+                Text('GPS služba není povolena', style: TextStyle(color: Colors.red)),
+              if (_permission == LocationPermission.denied)
+                Text('Povolení k poloze je zamítnuto', style: TextStyle(color: Colors.red)),
+              Expanded(
+                child: FutureBuilder<List<LatLng>>(
+                  future: widget.selectedPolyline,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Chyba při získávání trasy'));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text('Vyberte trasu pro zobrazení'));
+                    }
+
+                    final route = snapshot.data!;
+                    _startPoint = route.first;
+                    _endPoint = route.last;
+
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                          initialZoom: 14.0,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                            subdomains: ['a', 'b', 'c'],
+                          ),
+                          PolylineLayer(
+                            polylines: [
+                              Polyline(
+                                points: route,
+                                strokeWidth: 4.0,
+                                color: Colors.blue,
+                              ),
+                            ],
+                          ),
+                          CurrentLocationLayer(
+                            followOnLocationUpdate: FollowOnLocationUpdate.always,
+                            style: LocationMarkerStyle(
+                              marker: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.green.withOpacity(0.7),
+                                  border: Border.all(color: Colors.white, width: 3),
+                                ),
+                                child: Center(
+                                  child: Image.asset(
+                                    'assets/images/logo2-transformed.png',
+                                    width: 60,
+                                    height: 60,
+                                  ),
+                                ),
+                              ),
+                              markerSize: const Size(30, 30),
+                              markerDirection: MarkerDirection.heading,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
-          ],
+              if (_isNearStart && !_isTimerRunning) SizedBox(height: 10),
+              if (_isNearStart && !_isTimerRunning)
+                ElevatedButton(
+                  onPressed: () {
+                    print("Start!");
+                    _startTimer();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 50),
+                  ),
+                  child: Text("Start", style: TextStyle(color: Colors.black)),
+                ),
+              if (_isTimerRunning) SizedBox(height: 10),
+              if (_isTimerRunning)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'Čas: ${_formatElapsedTime(_elapsedDuration)}',
+                    style: TextStyle(fontSize: 24, color: Colors.white),
+                  ),
+                ),
+              if (!_isTimerRunning && _elapsedTime.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'Uběhlý čas: $_elapsedTime',
+                    style: TextStyle(fontSize: 24, color: Colors.green),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-
 
 
 class LeaderboardScreen extends StatelessWidget {
@@ -1296,4 +1451,5 @@ class LeaderboardScreen extends StatelessWidget {
     );
   }
 }
+
 
