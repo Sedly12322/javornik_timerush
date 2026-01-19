@@ -5,8 +5,8 @@ buildscript {
     }
     dependencies {
         // Zde přidáme classpath pro Firebase a Google Services
-        classpath 'com.android.tools.build:gradle:7.3.1'  // Použijte verzi, která je kompatibilní s vaším projektem
-        classpath 'com.google.gms:google-services:4.3.15'  // Verze Google Services pluginu
+        classpath 'com.android.tools.build:gradle:8.1.4'  // Použijte verzi, která je kompatibilní s vaším projektem
+        classpath 'com.google.gms:google-services:4.4.4'  // Verze Google Services pluginu
     }
 }
 

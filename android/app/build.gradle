@@ -8,15 +8,16 @@ plugins {
 android {
     namespace = "com.example.javornik_timerush"
     compileSdk = 35
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -44,6 +45,5 @@ apply plugin: 'com.google.gms.google-services'
 // Přidání Firebase závislostí
 dependencies {
     implementation 'com.google.firebase:firebase-auth:23.1.0'  // Firebase Authentication
-    // Další Firebase služby podle potřeby, například:
-    // implementation 'com.google.firebase:firebase-firestore:24.0.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
