@@ -28,12 +28,15 @@ dependencies:
   intl: ^0.20.1
   wakelock_plus: ^1.2.10
   flutter_background_service: ^5.1.0
-
+  image_picker: ^1.0.7       # Pro výběr fotky z galerie
+  firebase_storage: 12.4.10  # Pro nahrání fotky na cloud
+  google_sign_in: ^6.1.0
+  permission_handler: ^11.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^2.0.0
 
 
@@ -41,3 +44,14 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  # Pro Samsung S25 adaptivní ikona:
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  # DŮLEŽITÉ: Vygenerovat i specificky kulatou ikonu:
+  icon_name: "ic_launcher"

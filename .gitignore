@@ -41,3 +41,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase a Google Services (TAJNÉ!)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Keystore a podpisy (TAJNÉ!)
+*.jks
+*.keystore
+key.properties
+
+# API Klíče (Doporučuji)
+lib/utils/secrets.dart
+
+# Flutter build soubory (zbytečně velké)
+build/
+.vscode/
+
