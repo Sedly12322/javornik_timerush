@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        google()  // Ujistěte se, že máte tuto řádku pro přístup k Google Services
+        mavenCentral()
+    }
+    dependencies {
+        // Zde přidáme classpath pro Firebase a Google Services
+        classpath 'com.android.tools.build:gradle:8.1.4'  // Použijte verzi, která je kompatibilní s vaším projektem
+        classpath 'com.google.gms:google-services:4.4.4'  // Verze Google Services pluginu
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+
