@@ -52,6 +52,9 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
   late LatLng _startPoint;
   late LatLng _endPoint;
 
+  StreamSubscription? _serviceSubscriptionTime;
+  StreamSubscription? _serviceSubscriptionTrip;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +69,8 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
 
   @override
   void dispose() {
+    _serviceSubscriptionTime?.cancel();
+    _serviceSubscriptionTrip?.cancel();
     _gpsStream?.cancel();
     _uiTimer?.cancel();
     WakelockPlus.disable();
@@ -108,7 +113,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
   void _connectToService() {
     final service = FlutterBackgroundService();
 
-    service.on('updateTime').listen((event) {
+    _serviceSubscriptionTime = service.on('updateTime').listen((event) {
       if (event != null && mounted) {
         setState(() {
           _isTimerRunning = true;
@@ -120,9 +125,12 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
       }
     });
 
-    service.on('tripFinished').listen((event) {
+    _serviceSubscriptionTrip = service.on('tripFinished').listen((event) {
       if (mounted && !_isSaving) {
+        _isSaving = true;
         String finalTime = event?['finalTime'] ?? _elapsedTimeString;
+        _uiTimer?.cancel();
+        setState(() => _isTimerRunning = false);
         _showSuccessDialog(finalTime);
       }
     });
@@ -211,14 +219,25 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
   }
 
   void _finishTripByUI() async {
+    if (_isSaving) return;
     setState(() {
       _isSaving = true;
       _isTimerRunning = false;
     });
     _uiTimer?.cancel();
 
-    FlutterBackgroundService().invoke("stopService");
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final service = FlutterBackgroundService();
+    final isServiceRunning = await service.isRunning();
+
+    // Pokud služba běží, jen ji zastavíme - ona sama uloží výsledek
+    // Pokud neběží, uložíme výsledek z UI
+    if (isServiceRunning) {
+      service.invoke("stopService");
+      return;
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
     showDialog(
         context: context,
@@ -238,20 +257,24 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
       _showSuccessDialog(_elapsedTimeString);
     } catch (e) {
       if(mounted) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Chyba uložení: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Chyba uložení: $e")));
     }
   }
 
   void _abort() {
     FlutterBackgroundService().invoke("stopService");
-    FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).set({'is_running': false}, SetOptions(merge: true));
-    Navigator.pop(context);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      FirebaseFirestore.instance.collection('users').doc(uid).set({'is_running': false}, SetOptions(merge: true));
+    }
+    if (mounted) Navigator.pop(context);
   }
 
   void _showSuccessDialog(String time) {
     _uiTimer?.cancel();
     setState(() => _isTimerRunning = false);
 
+    if (!mounted) return;
     showDialog(
         context: context, barrierDismissible: false,
         builder: (ctx) => AlertDialog(
@@ -348,7 +371,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                     ),
                     children: [
                       TileLayer(
-                        urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        urlTemplate: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
                       ),
                       if(_cachedRoute.isNotEmpty)
                         PolylineLayer(polylines: [
@@ -378,7 +401,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
               }
           )),
 
-          // 2. TLAČÍTKO ZPĚT (Plovoucí)
+          // 4. TLAČÍTKO ZPĚT (Plovoucí)
           Positioned(
             top: 50, left: 20,
             child: GestureDetector(

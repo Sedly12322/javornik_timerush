@@ -32,7 +32,7 @@ class _AuthScreenState extends State<AuthScreen> {
       // 1. Spustit Google flow
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
         return; // Uživatel to zrušil
       }
 

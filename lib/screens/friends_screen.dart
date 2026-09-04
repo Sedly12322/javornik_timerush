@@ -21,6 +21,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,

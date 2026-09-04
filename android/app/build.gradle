@@ -1,14 +1,14 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" version "4.4.3"
 }
 
 android {
     namespace = "com.example.javornik_timerush"
     compileSdk = 35
-    ndkVersion = "25.1.8937393"
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -22,8 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.javornik_timerush"
-        minSdk = 23
-        targetSdk = 34
+        minSdkVersion = flutter.minSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -39,11 +39,6 @@ flutter {
     source = "../.."
 }
 
-// Přidání Google Services pluginu
-apply plugin: 'com.google.gms.google-services'
-
-// Přidání Firebase závislostí
 dependencies {
-    implementation 'com.google.firebase:firebase-auth:23.1.0'  // Firebase Authentication
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }

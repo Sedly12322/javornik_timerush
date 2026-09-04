@@ -197,7 +197,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
                           MaterialPageRoute(
                             builder: (context) => LeaderboardScreen(
                               selectedMountain: _selectedMountainName!,
-                              selectedRoute: route['id'], // Předáváme ID trasy
+                              selectedRoute: route['id'] ?? route['name'],
                             ),
                           ),
                         );

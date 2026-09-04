@@ -260,7 +260,7 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
                     ),
                   ),
                   children: [
-                    TileLayer(urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+                    TileLayer(urlTemplate: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"),
 
                     // TRASA
                     if (route.isNotEmpty)

@@ -105,7 +105,7 @@ void onStart(ServiceInstance service) async {
           const NotificationDetails(android: AndroidNotificationDetails(
               channelId, 'Javorník TimeRush',
               icon: '@mipmap/ic_launcher',
-              ongoing: true, autoCancel: false, onlyAlertOnce: true, showWhen: false
+              ongoing: true, autoCancel: false, showWhen: false
           ))
       );
     } catch (e) {
@@ -126,7 +126,7 @@ void onStart(ServiceInstance service) async {
           const NotificationDetails(android: AndroidNotificationDetails(
               channelId, 'Javorník TimeRush',
               icon: '@mipmap/ic_launcher',
-              ongoing: true, autoCancel: false, onlyAlertOnce: true, showWhen: false
+              ongoing: true, autoCancel: false, showWhen: false
           ))
       );
     });
