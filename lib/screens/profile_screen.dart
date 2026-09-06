@@ -212,8 +212,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                     IconData icon;
                     VoidCallback? action;
 
-                    switch (status) {
-                          case 'accepted':
+                    if (status == 'accepted') {
                             text = "Jste přátelé";
                             bgColor = Colors.green;
                             icon = Icons.check_circle;
@@ -236,23 +235,23 @@ class ProfileScreenState extends State<ProfileScreen> {
                                   )
                               );
                             };
-                          case 'sent':
+                          } else if (status == 'sent') {
                             text = "Žádost odeslána";
                             bgColor = Colors.grey[300]!;
                             txtColor = Colors.black87;
                             icon = Icons.hourglass_top;
                             action = () => FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                          case 'received':
+                          } else if (status == 'received') {
                             text = "Přijmout žádost";
                             bgColor = Colors.blue;
                             icon = Icons.person_add;
                             action = () => FriendService().acceptFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                          default:
+                          } else {
                             text = "Přidat do přátel";
                             bgColor = Colors.blueAccent;
                             icon = Icons.person_add_alt_1;
                             action = () => FriendService().sendFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                        }
+                          }
 
                     return SizedBox(
                       width: 200,

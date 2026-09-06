@@ -263,11 +263,11 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
     }
   }
 
-  void _abort() {
+  void _abort() async {
     FlutterBackgroundService().invoke("stopService");
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      FirebaseFirestore.instance.collection('users').doc(uid).set({'is_running': false}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({'is_running': false}, SetOptions(merge: true));
     }
     if (mounted) Navigator.pop(context);
   }
