@@ -197,7 +197,7 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
       });
 
       // 6. Zápis do DB
-      FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'is_running': true,
         'start_time': DateTime.now().toIso8601String()
       }, SetOptions(merge: true));

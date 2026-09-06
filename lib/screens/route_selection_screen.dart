@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -145,16 +144,6 @@ class RouteSelectionScreenState extends State<RouteSelectionScreen> {
     return LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng));
   }
 
-  Future<void> resetStartTime() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'start_time': FieldValue.delete(),
-        'is_running': false,
-      });
-    }
-  }
-
   void _navigateToNavigationScreen() async {
     if (_selectedRouteName == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -165,7 +154,6 @@ class RouteSelectionScreenState extends State<RouteSelectionScreen> {
     }
 
     List<LatLng> routePoints = await _getRouteForSelectedRoute();
-    await resetStartTime();
 
     if (!mounted) return;
 

@@ -213,46 +213,46 @@ class ProfileScreenState extends State<ProfileScreen> {
                     VoidCallback? action;
 
                     switch (status) {
-                      case 'accepted':
-                        text = "Jste přátelé";
-                        bgColor = Colors.green;
-                        icon = Icons.check_circle;
-                        action = () {
-                          showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: Text("Odebrat přítele?"),
-                                content: Text("Opravdu chcete odebrat tohoto uživatele z přátel?"),
-                                actions: [
-                                  TextButton(child: Text("Ne"), onPressed: () => Navigator.pop(ctx)),
-                                  TextButton(
-                                      child: Text("Ano", style: TextStyle(color: Colors.red)),
-                                      onPressed: () {
-                                        FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                                        Navigator.pop(ctx);
-                                      }
-                                  ),
-                                ],
-                              )
-                          );
-                        };
-                      case 'sent':
-                        text = "Žádost odeslána";
-                        bgColor = Colors.grey[300]!;
-                        txtColor = Colors.black87;
-                        icon = Icons.hourglass_top;
-                        action = () => FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                      case 'received':
-                        text = "Přijmout žádost";
-                        bgColor = Colors.blue;
-                        icon = Icons.person_add;
-                        action = () => FriendService().acceptFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                      default:
-                        text = "Přidat do přátel";
-                        bgColor = Colors.blueAccent;
-                        icon = Icons.person_add_alt_1;
-                        action = () => FriendService().sendFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                    }
+                          case 'accepted':
+                            text = "Jste přátelé";
+                            bgColor = Colors.green;
+                            icon = Icons.check_circle;
+                            action = () {
+                              showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: Text("Odebrat přítele?"),
+                                    content: Text("Opravdu chcete odebrat tohoto uživatele z přátel?"),
+                                    actions: [
+                                      TextButton(child: Text("Ne"), onPressed: () => Navigator.pop(ctx)),
+                                      TextButton(
+                                          child: Text("Ano", style: TextStyle(color: Colors.red)),
+                                          onPressed: () {
+                                            FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
+                                            Navigator.pop(ctx);
+                                          }
+                                      ),
+                                    ],
+                                  )
+                              );
+                            };
+                          case 'sent':
+                            text = "Žádost odeslána";
+                            bgColor = Colors.grey[300]!;
+                            txtColor = Colors.black87;
+                            icon = Icons.hourglass_top;
+                            action = () => FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
+                          case 'received':
+                            text = "Přijmout žádost";
+                            bgColor = Colors.blue;
+                            icon = Icons.person_add;
+                            action = () => FriendService().acceptFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
+                          default:
+                            text = "Přidat do přátel";
+                            bgColor = Colors.blueAccent;
+                            icon = Icons.person_add_alt_1;
+                            action = () => FriendService().sendFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
+                        }
 
                     return SizedBox(
                       width: 200,
