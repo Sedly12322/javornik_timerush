@@ -15,10 +15,10 @@ class ProfileScreen extends StatefulWidget {
   ProfileScreen({this.viewUserId});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  ProfileScreenState createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
 
   bool get _isMyProfile {
@@ -100,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (_isMyProfile) ...[
             Container(
               margin: EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
               child: IconButton(
                 icon: Icon(Icons.people, color: Colors.blue[800]),
                 tooltip: "Přátelé",
@@ -109,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             Container(
               margin: EdgeInsets.only(right: 15, left: 5),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
               child: IconButton(
                 icon: Icon(Icons.search, color: Colors.blue[800]),
                 tooltip: "Hledat uživatele",
@@ -236,20 +236,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                           );
                         };
-                        break;
                       case 'sent':
                         text = "Žádost odeslána";
                         bgColor = Colors.grey[300]!;
                         txtColor = Colors.black87;
                         icon = Icons.hourglass_top;
                         action = () => FriendService().removeFriend(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                        break;
                       case 'received':
                         text = "Přijmout žádost";
                         bgColor = Colors.blue;
                         icon = Icons.person_add;
                         action = () => FriendService().acceptFriendRequest(FirebaseAuth.instance.currentUser!.uid, _targetUserId);
-                        break;
                       default:
                         text = "Přidat do přátel";
                         bgColor = Colors.blueAccent;
@@ -355,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4))],
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: Offset(0, 4))],
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -446,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -454,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 24, color: color),

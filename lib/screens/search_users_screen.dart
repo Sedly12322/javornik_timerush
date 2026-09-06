@@ -4,10 +4,10 @@ import 'package:javornik_timerush/screens/profile_screen.dart';
 
 class SearchUsersScreen extends StatefulWidget {
   @override
-  _SearchUsersScreenState createState() => _SearchUsersScreenState();
+  SearchUsersScreenState createState() => SearchUsersScreenState();
 }
 
-class _SearchUsersScreenState extends State<SearchUsersScreen> {
+class SearchUsersScreenState extends State<SearchUsersScreen> {
   String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
@@ -101,7 +101,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 5, offset: Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 5, offset: Offset(0, 2))],
                     border: Border.all(color: Colors.grey.shade100),
                   ),
                   child: Material(
@@ -125,7 +125,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                               padding: EdgeInsets.all(2),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
                               ),
                               child: CircleAvatar(
                                 radius: 22,

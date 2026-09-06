@@ -11,14 +11,15 @@ import 'package:javornik_timerush/screens/leaderboard_selection_screen.dart'; //
 
 class MainMenuScreen extends StatefulWidget {
   @override
-  _MainMenuScreenState createState() => _MainMenuScreenState();
+  MainMenuScreenState createState() => MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> {
+class MainMenuScreenState extends State<MainMenuScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void _signOut() async {
     await _auth.signOut();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => AuthScreen()),
     );
@@ -42,7 +43,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           Container(
             margin: EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -136,14 +137,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                               fit: BoxFit.cover,
                             ),
                             boxShadow: [
-                              BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 15, offset: Offset(0, 8))
+                              BoxShadow(color: Colors.blue.withValues(alpha: 0.4), blurRadius: 15, offset: Offset(0, 8))
                             ]
                         ),
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(25),
                             gradient: LinearGradient(
-                              colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                              colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
                               begin: Alignment.bottomLeft,
                               end: Alignment.topRight,
                             ),
@@ -229,7 +230,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: Offset(0, 4))],
             border: Border.all(color: Colors.grey.shade50)
         ),
         child: Column(
@@ -237,7 +238,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           children: [
             Container(
               padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, size: 26, color: color),
             ),
             SizedBox(height: 10),

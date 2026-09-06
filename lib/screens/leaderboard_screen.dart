@@ -12,10 +12,10 @@ class LeaderboardScreen extends StatefulWidget {
   });
 
   @override
-  _LeaderboardScreenState createState() => _LeaderboardScreenState();
+  LeaderboardScreenState createState() => LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class LeaderboardScreenState extends State<LeaderboardScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _leaderboardData = [];
   String? _errorMessage;
@@ -109,7 +109,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         title: Column(
           children: [
             Text("ŽEBŘÍČEK", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: Colors.black87)),
-            Text("${widget.selectedMountain}", style: TextStyle(fontSize: 12, color: Colors.black54)),
+            Text(widget.selectedMountain, style: TextStyle(fontSize: 12, color: Colors.black54)),
           ],
         ),
         centerTitle: true,
@@ -117,7 +117,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         elevation: 0,
         leading: Container(
           margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
           child: BackButton(color: Colors.black),
         ),
       ),
@@ -167,7 +167,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
               if (index == 0) {
                 tileColor = Color(0xFFFFD700); // Zlatá
-                timeBgColor = Colors.white.withOpacity(0.5);
+                timeBgColor = Colors.white.withValues(alpha: 0.5);
                 elevation = 8;
                 scale = 1.05; // První místo je trochu větší
                 rankWidget = Icon(Icons.emoji_events, color: Colors.white, size: 30);
@@ -178,7 +178,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               } else if (index == 2) {
                 tileColor = Color(0xFFCD7F32); // Bronzová
                 titleColor = Colors.white;
-                timeBgColor = Colors.white.withOpacity(0.3);
+                timeBgColor = Colors.white.withValues(alpha: 0.3);
                 elevation = 5;
                 rankWidget = Text("#3", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white70));
               } else {
@@ -239,7 +239,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                   ),
                                   Text(
                                       entry['date'],
-                                      style: TextStyle(fontSize: 11, color: titleColor.withOpacity(0.6))
+                                      style: TextStyle(fontSize: 11, color: titleColor.withValues(alpha: 0.6))
                                   ),
                                 ],
                               ),

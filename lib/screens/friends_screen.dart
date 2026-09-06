@@ -6,10 +6,10 @@ import 'package:javornik_timerush/services/friend_service.dart';
 
 class FriendsScreen extends StatefulWidget {
   @override
-  _FriendsScreenState createState() => _FriendsScreenState();
+  FriendsScreenState createState() => FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderStateMixin {
+class FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final FriendService _friendService = FriendService();
   final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
@@ -32,7 +32,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text("Přátelé", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white.withOpacity(0.9), // Průsvitná bílá
+        backgroundColor: Colors.white.withValues(alpha: 0.9), // Průsvitná bílá
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.black87),
@@ -130,7 +130,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15), // Zaoblené rohy
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 5, offset: Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 5, offset: Offset(0, 2))],
                     border: Border.all(color: Colors.grey.shade100),
                   ),
                   child: Material(
@@ -155,7 +155,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                               padding: EdgeInsets.all(2),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
                               ),
                               child: CircleAvatar(
                                 radius: 22,

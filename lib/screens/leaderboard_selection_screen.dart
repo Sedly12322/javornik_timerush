@@ -4,10 +4,10 @@ import 'package:javornik_timerush/screens/leaderboard_screen.dart';
 
 class LeaderboardSelectionScreen extends StatefulWidget {
   @override
-  _LeaderboardSelectionScreenState createState() => _LeaderboardSelectionScreenState();
+  LeaderboardSelectionScreenState createState() => LeaderboardSelectionScreenState();
 }
 
-class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen> {
+class LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen> {
   // Data načtená z Firebase
   List<Map<String, dynamic>> mountains = [];
   List<Map<String, dynamic>>? _selectedMountainRoutes = [];
@@ -93,7 +93,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
         elevation: 0,
         leading: Container(
           margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
           child: BackButton(color: Colors.black),
         ),
       ),
@@ -143,7 +143,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             if (isSelected)
-                              BoxShadow(color: Colors.blueAccent.withOpacity(0.4), blurRadius: 10, offset: Offset(0, 4))
+                              BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.4), blurRadius: 10, offset: Offset(0, 4))
                             else
                               BoxShadow(color: Colors.black12, blurRadius: 5)
                           ],
@@ -208,7 +208,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: Offset(0, 5))
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: Offset(0, 5))
                           ],
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -218,7 +218,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: routeColor.withOpacity(0.1),
+                              color: routeColor.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(routeIcon, color: routeColor, size: 28),
@@ -258,7 +258,7 @@ class _LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen>
     try {
       hexColor = hexColor.toUpperCase().replaceAll("#", "");
       if (hexColor.length == 6) {
-        hexColor = "FF" + hexColor;
+        hexColor = "FF$hexColor";
       }
       return Color(int.parse(hexColor, radix: 16));
     } catch (e) {

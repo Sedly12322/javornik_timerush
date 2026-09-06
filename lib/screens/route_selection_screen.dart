@@ -12,10 +12,10 @@ import 'package:javornik_timerush/utils/constants.dart';
 
 class RouteSelectionScreen extends StatefulWidget {
   @override
-  _RouteSelectionScreenState createState() => _RouteSelectionScreenState();
+  RouteSelectionScreenState createState() => RouteSelectionScreenState();
 }
 
-class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
+class RouteSelectionScreenState extends State<RouteSelectionScreen> {
   List<Map<String, dynamic>> mountains = [];
   List<Map<String, dynamic>>? _selectedMountainRoutes = [];
 
@@ -200,7 +200,7 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
         targetLng = lng;
       }
 
-      final apiKey = AppConstants.openWeatherApiKey;
+      const apiKey = AppConstants.openWeatherApiKey;
       final response = await http.get(Uri.parse(
           'https://api.openweathermap.org/data/2.5/weather?lat=$targetLat&lon=$targetLng&appid=$apiKey&units=metric&lang=cz'
       ));
@@ -236,7 +236,7 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
       appBar: AppBar(
         // Skryjeme titulek při fullscreenu
         title: _isMapExpanded ? null : Text("Kam vyrazíme?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-        backgroundColor: _isMapExpanded ? Colors.transparent : Colors.white.withOpacity(0.9),
+        backgroundColor: _isMapExpanded ? Colors.transparent : Colors.white.withValues(alpha: 0.9),
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.black),
         shape: _isMapExpanded ? null : RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20))),
@@ -367,9 +367,9 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
                           margin: EdgeInsets.only(bottom: 15),
                           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.08),
+                            color: Colors.blue.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                            border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
                           ),
                           child: _isLoadingWeather
                               ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -425,8 +425,8 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
                                     width: 2
                                 ),
                                 boxShadow: isSelected
-                                    ? [BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 8, offset: Offset(0,4))]
-                                    : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: Offset(0,2))],
+                                    ? [BoxShadow(color: Colors.blue.withValues(alpha: 0.4), blurRadius: 8, offset: Offset(0,4))]
+                                    : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: Offset(0,2))],
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -518,7 +518,7 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
                           backgroundColor: _selectedRouteIndex != -1 ? Colors.green : Colors.grey[300],
                           foregroundColor: Colors.white,
                           elevation: _selectedRouteIndex != -1 ? 8 : 0,
-                          shadowColor: Colors.green.withOpacity(0.5),
+                          shadowColor: Colors.green.withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         onPressed: _selectedRouteIndex != -1 ? _navigateToNavigationScreen : null,

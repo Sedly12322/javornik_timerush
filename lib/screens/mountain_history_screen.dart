@@ -5,15 +5,15 @@ import 'package:intl/intl.dart';
 
 class MountainHistoryScreen extends StatefulWidget {
   final String mountainID;
-  final String? userId; // ID uživatele
+  final String? userId;
 
   MountainHistoryScreen({required this.mountainID, this.userId});
 
   @override
-  _MountainHistoryScreenState createState() => _MountainHistoryScreenState();
+  MountainHistoryScreenState createState() => MountainHistoryScreenState();
 }
 
-class _MountainHistoryScreenState extends State<MountainHistoryScreen> {
+class MountainHistoryScreenState extends State<MountainHistoryScreen> {
   List<Map<String, dynamic>> _allClimbs = [];
   List<Map<String, dynamic>> _displayedClimbs = [];
   List<String> _availableTrails = ['Všechny trasy'];
@@ -117,7 +117,7 @@ class _MountainHistoryScreenState extends State<MountainHistoryScreen> {
           Container(
             margin: EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 shape: BoxShape.circle
             ),
             child: PopupMenuButton<String>(
@@ -245,10 +245,10 @@ class _MountainHistoryScreenState extends State<MountainHistoryScreen> {
                       decoration: BoxDecoration(
                         color: isGold ? Color(0xFFFFFBE6) : Colors.white, // Jemně žlutá pro PB
                         borderRadius: BorderRadius.circular(16),
-                        border: isGold ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5) : null,
+                        border: isGold ? Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1.5) : null,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: Offset(0, 4),
                           )
@@ -264,7 +264,7 @@ class _MountainHistoryScreenState extends State<MountainHistoryScreen> {
                               decoration: BoxDecoration(
                                 color: isGold ? Colors.orange : Colors.blue[50],
                                 shape: BoxShape.circle,
-                                boxShadow: isGold ? [BoxShadow(color: Colors.orange.withOpacity(0.4), blurRadius: 8)] : [],
+                                boxShadow: isGold ? [BoxShadow(color: Colors.orange.withValues(alpha: 0.4), blurRadius: 8)] : [],
                               ),
                               child: Icon(
                                 isGold ? Icons.emoji_events : Icons.directions_walk,

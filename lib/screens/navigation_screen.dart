@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui'; // Potřeba pro font features
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -25,10 +25,10 @@ class NavigationScreen extends StatefulWidget {
   });
 
   @override
-  _NavigationScreenState createState() => _NavigationScreenState();
+  NavigationScreenState createState() => NavigationScreenState();
 }
 
-class _NavigationScreenState extends State<NavigationScreen> with TickerProviderStateMixin {
+class NavigationScreenState extends State<NavigationScreen> with TickerProviderStateMixin {
   late MapController _mapController;
   LatLng _currentMapPosition = LatLng(0, 0);
 
@@ -210,6 +210,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
         _isTimerRunning = false; // Reset tlačítka
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Chyba startu: $e"),
         backgroundColor: Colors.red,
@@ -239,6 +240,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+    if (!mounted) return;
     showDialog(
         context: context,
         barrierDismissible: false,
@@ -375,7 +377,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                       ),
                       if(_cachedRoute.isNotEmpty)
                         PolylineLayer(polylines: [
-                          Polyline(points: _cachedRoute, color: Colors.blueAccent, strokeWidth: 5.0, borderStrokeWidth: 2.0, borderColor: Colors.white.withOpacity(0.5))
+                          Polyline(points: _cachedRoute, color: Colors.blueAccent, strokeWidth: 5.0, borderStrokeWidth: 2.0, borderColor: Colors.white.withValues(alpha: 0.5))
                         ]),
                       MarkerLayer(markers: [
                         // UŽIVATEL
@@ -422,7 +424,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                   child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]
                       ),
@@ -508,7 +510,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                             label: Text("VZDÁT"),
                             style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.red[300],
-                                side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                                side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
                                 padding: EdgeInsets.symmetric(vertical: 15),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                             ),

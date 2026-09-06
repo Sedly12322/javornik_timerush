@@ -7,10 +7,10 @@ import 'package:javornik_timerush/screens/main_menu_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   @override
-  _AuthScreenState createState() => _AuthScreenState();
+  AuthScreenState createState() => AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class AuthScreenState extends State<AuthScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
@@ -129,8 +129,6 @@ class _AuthScreenState extends State<AuthScreen> {
       // Zde předpokládám, že uživatel do pole "Email" zadá email.
       // Pokud do username inputu zadá email, použijeme ten.
 
-      String input = _isLoginMode ? _emailController.text.trim() : _emailController.text.trim();
-
       // Pokud jsme v módu login a máme jen jedno pole pro "Jméno/Email", musíme to vyřešit.
       // Ale v designu níže mám pole pro Email odděleně.
 
@@ -141,7 +139,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!mounted) return;
       _navigateToMainScreen();
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException catch (_) {
       _showError('Chyba přihlášení. Zkontrolujte údaje.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
