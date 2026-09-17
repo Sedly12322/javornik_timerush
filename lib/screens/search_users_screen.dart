@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:javornik_timerush/screens/profile_screen.dart';
+import 'package:javornik_timerush/utils/constants.dart';
 
 class SearchUsersScreen extends StatefulWidget {
+  const SearchUsersScreen({super.key});
+
   @override
   SearchUsersScreenState createState() => SearchUsersScreenState();
 }
@@ -10,11 +12,52 @@ class SearchUsersScreen extends StatefulWidget {
 class SearchUsersScreenState extends State<SearchUsersScreen> {
   String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _performSearch("");
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _performSearch(String query) async {
+    setState(() {
+      _isLoading = true;
+      _searchQuery = query;
+    });
+
+    try {
+      List<dynamic> data;
+      if (query.trim().isEmpty) {
+        data = await supabase
+            .from('profiles')
+            .select()
+            .limit(20);
+      } else {
+        data = await supabase
+            .from('profiles')
+            .select()
+            .or('full_username.ilike.%$query%,username.ilike.%$query%')
+            .limit(20);
+      }
+
+      if (mounted) {
+        setState(() {
+          _searchResults = List<Map<String, dynamic>>.from(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Chyba vyhledávání: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -24,7 +67,7 @@ class SearchUsersScreenState extends State<SearchUsersScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Colors.black87),
         title: Container(
           height: 45,
           decoration: BoxDecoration(
@@ -35,140 +78,114 @@ class SearchUsersScreenState extends State<SearchUsersScreen> {
             controller: _searchController,
             autofocus: true,
             textAlignVertical: TextAlignVertical.center,
-            style: TextStyle(color: Colors.black87),
+            style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
               hintText: "Hledat uživatele...",
-              hintStyle: TextStyle(color: Colors.grey),
-              prefixIcon: Icon(Icons.search, color: Colors.grey),
+              hintStyle: const TextStyle(color: Colors.grey),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                icon: Icon(Icons.clear, color: Colors.grey, size: 20),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    _searchQuery = "";
-                  });
-                },
-              )
+                      icon: const Icon(Icons.clear, color: Colors.grey, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        _performSearch("");
+                      },
+                    )
                   : null,
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
             ),
             onChanged: (val) {
-              setState(() {
-                _searchQuery = val.toLowerCase();
-              });
+              _performSearch(val.trim());
             },
           ),
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.white, Color.fromRGBO(200, 228, 255, 0.5)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('users').snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _searchResults.isEmpty
+                ? const Center(child: Text("Žádní uživatelé nenalezeni."))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      var data = _searchResults[index];
+                      String userId = data['id'].toString();
+                      String username = data['full_username'] ?? data['username'] ?? "Neznámý";
+                      String? photoUrl = data['profile_picture'];
 
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return Center(child: Text("Žádní uživatelé v databázi."));
-            }
-
-            var users = snapshot.data!.docs.where((doc) {
-              var data = doc.data() as Map<String, dynamic>;
-              String username = (data['username'] ?? "").toString().toLowerCase();
-              String discriminator = (data['discriminator'] ?? "").toString();
-
-              // Vytvoříme plné jméno pro hledání (např. "dominik#1234")
-              String fullName = "$username$discriminator".toLowerCase();
-
-              // Hledáme buď jen ve jméně, nebo v celém řetězci
-              return username.contains(_searchQuery) || fullName.contains(_searchQuery);
-            }).toList();
-
-            return ListView.builder(
-              padding: EdgeInsets.fromLTRB(16, 10, 16, 20),
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                var data = users[index].data() as Map<String, dynamic>;
-                String userId = users[index].id;
-                String username = data['username'] ?? "Neznámý";
-                String? photoUrl = data['profile_picture'];
-
-                return Container(
-                  margin: EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 5, offset: Offset(0, 2))],
-                    border: Border.all(color: Colors.grey.shade100),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(15),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProfileScreen(viewUserId: userId),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        child: Row(
-                          children: [
-                            // Avatar
-                            Container(
-                              padding: EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
-                              ),
-                              child: CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Colors.blue[50],
-                                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                                child: photoUrl == null ? Text(username[0].toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)) : null,
-                              ),
-                            ),
-
-                            SizedBox(width: 15),
-
-                            // Jméno
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 5, offset: const Offset(0, 2))],
+                          border: Border.all(color: Colors.grey.shade100),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(15),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProfileScreen(viewUserId: userId),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              child: Row(
                                 children: [
-                                  Text(
-                                      username,
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 22,
+                                      backgroundColor: Colors.blue[50],
+                                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                                      child: photoUrl == null
+                                          ? Text(
+                                              username.isNotEmpty ? username[0].toUpperCase() : '?',
+                                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                                            )
+                                          : null,
+                                    ),
                                   ),
-                                  Text("Horal", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  const SizedBox(width: 15),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          username,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                                        ),
+                                        const Text("Horal", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[300]),
                                 ],
                               ),
                             ),
-
-                            // Šipka
-                            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[300]),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            );
-          },
-        ),
       ),
     );
   }

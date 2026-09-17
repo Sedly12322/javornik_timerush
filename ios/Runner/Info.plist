@@ -45,5 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikace potřebuje přístup k vaší poloze pro měření času výšlapu a navigaci na trase.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikace potřebuje sledovat polohu i na pozadí, abyste mohli mít telefon při výšlapu v kapse.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Aplikace potřebuje sledovat polohu na pozadí pro přesné měření trasy.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikace potřebuje přístup ke galerii pro nahrání profilové fotky.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikace potřebuje přístup k fotoaparátu pro pořízení profilové fotky.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

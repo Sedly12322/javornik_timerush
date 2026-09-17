@@ -1,50 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:javornik_timerush/screens/auth_screen.dart';
-import 'package:javornik_timerush/screens/main_menu_screen.dart';
-import 'package:javornik_timerush/services/background_service.dart';
+import 'screens/auth_screen.dart';
+import 'screens/main_menu_screen.dart';
+import 'services/background_service.dart';
+import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  await Supabase.initialize(
+    url: AppConstants.supabaseUrl,
+    // ignore: deprecated_member_use
+    anonKey: AppConstants.supabaseAnonKey,
+  );
+
   await initializeDateFormatting('cs_CZ', null);
 
-  // TOTO MUSÍ BÝT ZDE
   await initializeService();
 
-  runApp(MyApp());
+  runApp(const JavornikTimerushApp());
 }
 
-class MyApp extends StatelessWidget {
+class JavornikTimerushApp extends StatelessWidget {
+  const JavornikTimerushApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Javorník TimeRush',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
-      home: AuthWrapper(),
+      home: const AuthWrapper(),
     );
   }
 }
 
 class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<AuthState>(
+      stream: supabase.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          if (snapshot.hasData) {
-            return MainMenuScreen();
-          } else {
-            return AuthScreen();
-          }
+        final session = supabase.auth.currentSession;
+        if (session != null) {
+          return MainMenuScreen();
+        } else {
+          return AuthScreen();
         }
-        return Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:javornik_timerush/screens/auth_screen.dart';
 import 'package:javornik_timerush/screens/profile_screen.dart';
 import 'package:javornik_timerush/screens/friends_screen.dart';
 import 'package:javornik_timerush/screens/search_users_screen.dart';
 import 'package:javornik_timerush/screens/route_selection_screen.dart';
 import 'package:javornik_timerush/screens/about_screen.dart';
-import 'package:javornik_timerush/screens/leaderboard_selection_screen.dart'; // <--- NOVÝ IMPORT
+import 'package:javornik_timerush/screens/leaderboard_selection_screen.dart';
+import 'package:javornik_timerush/utils/constants.dart';
 
 class MainMenuScreen extends StatefulWidget {
+  const MainMenuScreen({super.key});
+
   @override
   MainMenuScreenState createState() => MainMenuScreenState();
 }
 
 class MainMenuScreenState extends State<MainMenuScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
   void _signOut() async {
-    await _auth.signOut();
+    await supabase.auth.signOut();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => AuthScreen()),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthScreen()),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = supabase.auth.currentUser;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -41,13 +41,13 @@ class MainMenuScreenState extends State<MainMenuScreen> {
         elevation: 0,
         actions: [
           Container(
-            margin: EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: Icon(Icons.logout, color: Colors.blueGrey, size: 20),
+              icon: const Icon(Icons.logout, color: Colors.blueGrey, size: 20),
               onPressed: _signOut,
               tooltip: "Odhlásit se",
             ),
@@ -57,7 +57,7 @@ class MainMenuScreenState extends State<MainMenuScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color.fromRGBO(200, 228, 255, 1), Colors.white],
             begin: Alignment.topCenter,
@@ -66,14 +66,19 @@ class MainMenuScreenState extends State<MainMenuScreen> {
           ),
         ),
         child: SafeArea(
-          child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(user?.uid).snapshots(),
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: user != null
+                ? supabase
+                    .from('profiles')
+                    .stream(primaryKey: ['id'])
+                    .eq('id', user.id)
+                : const Stream.empty(),
             builder: (context, snapshot) {
               String username = "Horale";
               String? photoUrl;
 
-              if (snapshot.hasData && snapshot.data!.exists) {
-                var data = snapshot.data!.data() as Map<String, dynamic>;
+              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                var data = snapshot.data!.first;
                 username = data['username'] ?? "Horale";
                 photoUrl = data['profile_picture'];
               }
@@ -83,7 +88,7 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
                     // 1. HLAVIČKA
                     Row(
@@ -93,15 +98,15 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Vítej zpět,", style: TextStyle(fontSize: 16, color: Colors.blueGrey[700])),
-                              Text(username, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black87)),
+                              Text(username, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black87)),
                             ],
                           ),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen())),
                           child: Container(
-                            padding: EdgeInsets.all(3),
-                            decoration: BoxDecoration(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
@@ -117,7 +122,7 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                       ],
                     ),
 
-                    SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
                     // 2. HLAVNÍ KARTA (START)
                     GestureDetector(
@@ -132,12 +137,12 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(25),
-                            image: DecorationImage(
+                            image: const DecorationImage(
                               image: NetworkImage("https://images.unsplash.com/photo-1519681393784-d8e5b5a45460?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"),
                               fit: BoxFit.cover,
                             ),
                             boxShadow: [
-                              BoxShadow(color: Colors.blue.withValues(alpha: 0.4), blurRadius: 15, offset: Offset(0, 8))
+                              BoxShadow(color: Colors.blue.withValues(alpha: 0.4), blurRadius: 15, offset: const Offset(0, 8))
                             ]
                         ),
                         child: Container(
@@ -149,28 +154,28 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                               end: Alignment.topRight,
                             ),
                           ),
-                          padding: EdgeInsets.all(25),
+                          padding: const EdgeInsets.all(25),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                                child: Icon(Icons.directions_run, color: Colors.white, size: 24),
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                                child: const Icon(Icons.directions_run, color: Colors.white, size: 24),
                               ),
-                              SizedBox(height: 10),
-                              Text("JÍT NA HORU", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                              Text("Vyber trasu a spusť stopky", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              const SizedBox(height: 10),
+                              const Text("JÍT NA HORU", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                              const Text("Vyber trasu a spusť stopky", style: TextStyle(color: Colors.white70, fontSize: 13)),
                             ],
                           ),
                         ),
                       ),
                     ),
 
-                    SizedBox(height: 30),
-                    Text("Menu", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    SizedBox(height: 15),
+                    const SizedBox(height: 30),
+                    const Text("Menu", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 15),
 
                     // 3. MŘÍŽKA MENU
                     Expanded(
@@ -181,7 +186,7 @@ class MainMenuScreenState extends State<MainMenuScreen> {
                         childAspectRatio: 1.3,
                         children: [
                           _buildMenuCard(
-                            title: "Žebříčky", // <--- NOVÉ TLAČÍTKO
+                            title: "Žebříčky",
                             icon: Icons.emoji_events,
                             color: Colors.amber,
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LeaderboardSelectionScreen())),
@@ -230,19 +235,19 @@ class MainMenuScreenState extends State<MainMenuScreen> {
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: Offset(0, 4))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
             border: Border.all(color: Colors.grey.shade50)
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.all(10),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, size: 26, color: color),
             ),
-            SizedBox(height: 10),
-            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
           ],
         ),
       ),

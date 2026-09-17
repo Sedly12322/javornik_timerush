@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:javornik_timerush/utils/constants.dart';
 
 class MountainHistoryScreen extends StatefulWidget {
   final String mountainID;
   final String? userId;
 
-  MountainHistoryScreen({required this.mountainID, this.userId});
+  const MountainHistoryScreen({super.key, required this.mountainID, this.userId});
 
   @override
   MountainHistoryScreenState createState() => MountainHistoryScreenState();
@@ -30,9 +29,9 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
   Future<void> _fetchHistory() async {
     String? targetUid = widget.userId;
     if (targetUid == null) {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = supabase.auth.currentUser;
       if (user == null) return;
-      targetUid = user.uid;
+      targetUid = user.id;
     }
 
     setState(() {
@@ -40,24 +39,23 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
     });
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(targetUid)
-          .collection('climbs')
-          .where('mountainID', isEqualTo: widget.mountainID)
-          .get();
+      final List<dynamic> data = await supabase
+          .from('climbs')
+          .select()
+          .eq('user_id', targetUid)
+          .eq('mountain_id', widget.mountainID);
 
-      List<Map<String, dynamic>> loadedClimbs = snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data();
-        String trailName = data['trailID'] ?? 'Neznámá trasa';
-        int seconds = data['time_seconds'] ?? 999999;
+      List<Map<String, dynamic>> loadedClimbs = data.map((item) {
+        String trailName = item['trail_id'] ?? 'Neznámá trasa';
+        int seconds = item['time_seconds'] ?? 999999;
+        DateTime date = DateTime.tryParse(item['date']?.toString() ?? '') ?? DateTime.now();
 
         return {
-          'id': doc.id,
+          'id': item['id'].toString(),
           'trailID': trailName,
-          'time': data['time'] ?? '??:??',
+          'time': item['time'] ?? '??:??',
           'time_seconds': seconds,
-          'date': (data['date'] as Timestamp).toDate(),
+          'date': date,
         };
       }).toList();
 
@@ -76,7 +74,6 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
         });
         _applyFilterAndSort();
       }
-
     } catch (e) {
       print("CHYBA: $e");
       if (mounted) setState(() => _isLoading = false);
@@ -92,9 +89,9 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
     }
 
     if (_sortBy == 'date') {
-      tempClimbs.sort((a, b) => b['date'].compareTo(a['date']));
+      tempClimbs.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
     } else {
-      tempClimbs.sort((a, b) => a['time_seconds'].compareTo(b['time_seconds']));
+      tempClimbs.sort((a, b) => (a['time_seconds'] as int).compareTo(b['time_seconds'] as int));
     }
 
     setState(() {
@@ -107,18 +104,17 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.mountainID, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text(widget.mountainID, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
-          // Tlačítko pro řazení
           Container(
-            margin: EdgeInsets.only(right: 10),
+            margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.5),
-                shape: BoxShape.circle
+              color: Colors.white.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
             ),
             child: PopupMenuButton<String>(
               icon: Icon(Icons.sort, color: Colors.blue[900]),
@@ -130,13 +126,13 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
                 _applyFilterAndSort();
               },
               itemBuilder: (context) => [
-                PopupMenuItem(
-                    value: 'date',
-                    child: Row(children: [Icon(Icons.calendar_month, size: 18), SizedBox(width: 8), Text("Podle data")])
+                const PopupMenuItem(
+                  value: 'date',
+                  child: Row(children: [Icon(Icons.calendar_month, size: 18), SizedBox(width: 8), Text("Podle data")]),
                 ),
-                PopupMenuItem(
-                    value: 'time',
-                    child: Row(children: [Icon(Icons.timer, size: 18), SizedBox(width: 8), Text("Podle času (PB)")])
+                const PopupMenuItem(
+                  value: 'time',
+                  child: Row(children: [Icon(Icons.timer, size: 18), SizedBox(width: 8), Text("Podle času (PB)")]),
                 ),
               ],
             ),
@@ -144,7 +140,7 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color.fromRGBO(200, 228, 255, 1), Colors.white],
             begin: Alignment.topCenter,
@@ -157,10 +153,10 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
               // 1. FILTR TRAS (CHIPS)
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: _availableTrails.map((trail) {
                       bool isSelected = _selectedTrail == trail;
@@ -198,12 +194,12 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
                 child: Row(
                   children: [
                     Text(
-                        "Zobrazeno ${_displayedClimbs.length} výšlapů",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12)
+                      "Zobrazeno ${_displayedClimbs.length} výšlapů",
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     if (_sortBy == 'time')
-                      Text("Seřazeno podle nejlepších časů", style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const Text("Seřazeno podle nejlepších časů", style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -211,117 +207,78 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
               // 3. SEZNAM VÝŠLAPŮ
               Expanded(
                 child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator())
                     : _displayedClimbs.isEmpty
-                    ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.hiking, size: 60, color: Colors.grey[300]),
-                      SizedBox(height: 10),
-                      Text("Žádný záznam pro tento filtr.", style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                )
-                    : ListView.builder(
-                  padding: EdgeInsets.fromLTRB(16, 5, 16, 20),
-                  itemCount: _displayedClimbs.length,
-                  itemBuilder: (context, index) {
-                    final climb = _displayedClimbs[index];
-
-                    // Formátování data (bezpečná varianta)
-                    String dateStr;
-                    try {
-                      dateStr = DateFormat('d. MMMM yyyy, HH:mm', 'cs_CZ').format(climb['date']);
-                    } catch (e) {
-                      dateStr = DateFormat('dd.MM.yyyy HH:mm').format(climb['date']);
-                    }
-
-                    // Zlatá karta, pokud řadíme podle času a je to první položka (rekord)
-                    bool isGold = (_sortBy == 'time' && index == 0);
-
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: isGold ? Color(0xFFFFFBE6) : Colors.white, // Jemně žlutá pro PB
-                        borderRadius: BorderRadius.circular(16),
-                        border: isGold ? Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1.5) : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            // IKONA
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isGold ? Colors.orange : Colors.blue[50],
-                                shape: BoxShape.circle,
-                                boxShadow: isGold ? [BoxShadow(color: Colors.orange.withValues(alpha: 0.4), blurRadius: 8)] : [],
-                              ),
-                              child: Icon(
-                                isGold ? Icons.emoji_events : Icons.directions_walk,
-                                color: isGold ? Colors.white : Colors.blue[800],
-                                size: 24,
-                              ),
-                            ),
-                            SizedBox(width: 16),
-
-                            // INFO
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                      climb['trailID'],
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: Colors.black87
-                                      )
-                                  ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.calendar_today, size: 12, color: Colors.grey),
-                                      SizedBox(width: 4),
-                                      Text(dateStr, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // ČAS
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                        ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                    climb['time'],
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w800,
-                                        color: isGold ? Colors.orange[800] : Colors.blue[900],
-                                        letterSpacing: 0.5
-                                    )
-                                ),
-                                if (isGold)
-                                  Text("PB", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 10)),
+                                Icon(Icons.hiking, size: 60, color: Colors.grey),
+                                SizedBox(height: 10),
+                                Text("Žádný záznam pro tento filtr.", style: TextStyle(color: Colors.grey)),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 5, 16, 20),
+                            itemCount: _displayedClimbs.length,
+                            itemBuilder: (context, index) {
+                              final climb = _displayedClimbs[index];
+
+                              String dateStr;
+                              try {
+                                dateStr = DateFormat('d. MMMM yyyy, HH:mm', 'cs_CZ').format(climb['date']);
+                              } catch (e) {
+                                dateStr = DateFormat('dd.MM.yyyy HH:mm').format(climb['date']);
+                              }
+
+                              bool isGold = (_sortBy == 'time' && index == 0);
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: isGold ? const Color(0xFFFFFBE6) : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: isGold ? Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1.5) : null,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    )
+                                  ],
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isGold ? Colors.orange[100] : Colors.blue[50],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      isGold ? Icons.emoji_events : Icons.directions_walk,
+                                      color: isGold ? Colors.orange[800] : Colors.blue[800],
+                                      size: 22,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    climb['trailID'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                                  ),
+                                  subtitle: Text(dateStr, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  trailing: Text(
+                                    climb['time'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                      color: isGold ? Colors.orange[900] : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
               ),
             ],
           ),
