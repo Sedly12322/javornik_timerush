@@ -24,7 +24,11 @@ class AuthScreenState extends State<AuthScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: AppConstants.googleWebClientId.isNotEmpty
+            ? AppConstants.googleWebClientId
+            : null,
+      );
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         if (mounted) setState(() => _isLoading = false);
@@ -36,7 +40,7 @@ class AuthScreenState extends State<AuthScreen> {
       final accessToken = googleAuth.accessToken;
 
       if (idToken == null) {
-        throw 'Google Sign In nevrátil ID Token.';
+        throw 'Google Sign In nevrátil ID Token. Pro Android je potřeba nastavit GOOGLE_WEB_CLIENT_ID.';
       }
 
       final AuthResponse res = await supabase.auth.signInWithIdToken(
