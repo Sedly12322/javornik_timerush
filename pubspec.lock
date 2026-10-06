@@ -153,14 +153,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.10"
-  english_words:
-    dependency: "direct main"
-    description:
-      name: english_words
-      sha256: "6a7ef6473a97bd8571b6b641d006a6e58a7c67e65fb6f3d6d1151cb46b0e983c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -262,14 +254,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.2"
-  flutter_compass:
-    dependency: transitive
-    description:
-      name: flutter_compass
-      sha256: "1b4d7e6c95a675ec8482b5c9c9ccf1ebf0ced3dbec59dce28ad609da953de850"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -318,14 +302,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
-  flutter_map_location_marker:
-    dependency: "direct main"
-    description:
-      name: flutter_map_location_marker
-      sha256: "1971d9ad7c8bedb15cb6a03598c0a3ad66ac6f7f165ad90d801bd5f636120f38"
-      url: "https://pub.dev"
-    source: hosted
-    version: "9.1.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -464,14 +440,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.26.0"
-  gpx:
-    dependency: "direct main"
-    description:
-      name: gpx
-      sha256: f5b12b86402c639079243600ee2b3afd85cd08d26117fc8885cf48efce471d8e
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.0"
   gtk:
     dependency: transitive
     description:
@@ -696,14 +664,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  nested:
-    dependency: transitive
-    description:
-      name: nested
-      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   package_info_plus:
     dependency: transitive
     description:
@@ -760,54 +720,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
-  permission_handler:
-    dependency: "direct main"
-    description:
-      name: permission_handler
-      sha256: "59adad729136f01ea9e35a48f5d1395e25cba6cea552249ddbe9cf950f5d7849"
-      url: "https://pub.dev"
-    source: hosted
-    version: "11.4.0"
-  permission_handler_android:
-    dependency: transitive
-    description:
-      name: permission_handler_android
-      sha256: d3971dcdd76182a0c198c096b5db2f0884b0d4196723d21a866fc4cdea057ebc
-      url: "https://pub.dev"
-    source: hosted
-    version: "12.1.0"
-  permission_handler_apple:
-    dependency: transitive
-    description:
-      name: permission_handler_apple
-      sha256: f000131e755c54cf4d84a5d8bd6e4149e262cc31c5a8b1d698de1ac85fa41023
-      url: "https://pub.dev"
-    source: hosted
-    version: "9.4.7"
-  permission_handler_html:
-    dependency: transitive
-    description:
-      name: permission_handler_html
-      sha256: "38f000e83355abb3392140f6bc3030660cfaef189e1f87824facb76300b4ff24"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.3+5"
-  permission_handler_platform_interface:
-    dependency: transitive
-    description:
-      name: permission_handler_platform_interface
-      sha256: eb99b295153abce5d683cac8c02e22faab63e50679b937fa1bf67d58bb282878
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.0"
-  permission_handler_windows:
-    dependency: transitive
-    description:
-      name: permission_handler_windows
-      sha256: "1a790728016f79a41216d88672dbc5df30e686e811ad4e698bfc51f76ad91f1e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.1"
   petitparser:
     dependency: transitive
     description:
@@ -872,22 +784,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-  provider:
-    dependency: "direct main"
-    description:
-      name: provider
-      sha256: c8a055ee5ce3fd98d6fc872478b03823ffdb448699c6ebdbbc71d59b596fd48c
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.2"
-  quiver:
-    dependency: transitive
-    description:
-      name: quiver
-      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.2"
   realtime_client:
     dependency: transitive
     description:
