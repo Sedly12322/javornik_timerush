@@ -131,11 +131,6 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
           );
 
           _isNearStart = _distToStart < AppConstants.gpsTolerance;
-
-          // Detekce cíle
-          if (_isTimerRunning && _distToEnd < AppConstants.goalTolerance && !_isSaving) {
-            _finishTripByUI();
-          }
         }
       });
 
@@ -258,43 +253,6 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
     }
   }
 
-  void _finishTripByUI() async {
-    if (_isSaving) return;
-    setState(() {
-      _isSaving = true;
-      _isTimerRunning = false;
-    });
-    _uiTimer?.cancel();
-
-    final service = FlutterBackgroundService();
-    service.invoke("stopService");
-
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-          child: const CircularProgressIndicator(color: Colors.green),
-        ),
-      ),
-    );
-
-    try {
-      await _saveClimbOutput(user.id, widget.selectedMountainId, widget.selectedRouteId, _elapsedTimeString);
-      if (mounted) Navigator.pop(context); // zavřít loading
-      _showSuccessDialog(_elapsedTimeString);
-    } catch (e) {
-      if (mounted) Navigator.pop(context); // zavřít loading
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Chyba uložení: $e")));
-    }
-  }
-
   void _abort() async {
     FlutterBackgroundService().invoke("stopService");
     final user = supabase.auth.currentUser;
@@ -339,85 +297,6 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
         ],
       ),
     );
-  }
-
-  Future<void> _saveClimbOutput(String userId, String mountainId, String routeId, String timeStr) async {
-    List<String> parts = timeStr.split(':');
-    int seconds = int.parse(parts[0]) * 60 + int.parse(parts[1]);
-    double distanceKm = _calculateRouteDistanceKm();
-
-    // 1. Uložit výšlap
-    await supabase.from('climbs').insert({
-      'user_id': userId,
-      'mountain_id': mountainId,
-      'trail_id': routeId,
-      'time': timeStr,
-      'time_seconds': seconds,
-      'distance_km': distanceKm,
-      'date': DateTime.now().toIso8601String(),
-    });
-
-    // 2. Aktualizovat uživatelský profil
-    try {
-      final profile = await supabase
-          .from('profiles')
-          .select('total_climbs, total_time_seconds, total_distance')
-          .eq('id', userId)
-          .maybeSingle();
-
-      if (profile != null) {
-        int totalClimbs = (profile['total_climbs'] as int? ?? 0) + 1;
-        int totalSeconds = (profile['total_time_seconds'] as int? ?? 0) + seconds;
-        double totalDist = ((profile['total_distance'] as num?)?.toDouble() ?? 0.0) + distanceKm;
-
-        await supabase.from('profiles').update({
-          'is_running': false,
-          'total_climbs': totalClimbs,
-          'total_time_seconds': totalSeconds,
-          'total_distance': totalDist,
-        }).eq('id', userId);
-      }
-    } catch (e) {
-      print("Chyba aktualizace profilu: $e");
-    }
-
-    // 3. Aktualizovat mountain_stats
-    try {
-      final mStat = await supabase
-          .from('mountain_stats')
-          .select()
-          .eq('user_id', userId)
-          .eq('mountain_id', mountainId)
-          .maybeSingle();
-
-      if (mStat == null) {
-        await supabase.from('mountain_stats').insert({
-          'user_id': userId,
-          'mountain_id': mountainId,
-          'climbs_count': 1,
-          'last_climb_date': DateTime.now().toIso8601String(),
-          'best_time_seconds': seconds,
-          'best_time_str': timeStr,
-        });
-      } else {
-        int currentBest = (mStat['best_time_seconds'] as int? ?? 999999);
-        Map<String, dynamic> updateData = {
-          'climbs_count': (mStat['climbs_count'] as int? ?? 0) + 1,
-          'last_climb_date': DateTime.now().toIso8601String(),
-        };
-        if (seconds < currentBest) {
-          updateData['best_time_seconds'] = seconds;
-          updateData['best_time_str'] = timeStr;
-        }
-        await supabase
-            .from('mountain_stats')
-            .update(updateData)
-            .eq('user_id', userId)
-            .eq('mountain_id', mountainId);
-      }
-    } catch (e) {
-      print("Chyba aktualizace statistik hory: $e");
-    }
   }
 
   @override
