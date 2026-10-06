@@ -213,6 +213,10 @@ class RouteSelectionScreenState extends State<RouteSelectionScreen> {
       }
 
       const apiKey = AppConstants.openWeatherApiKey;
+      if (apiKey.isEmpty) {
+        if (mounted) setState(() => _isLoadingWeather = false);
+        return;
+      }
       final response = await http.get(Uri.parse(
           'https://api.openweathermap.org/data/2.5/weather?lat=$targetLat&lon=$targetLng&appid=$apiKey&units=metric&lang=cz'));
 

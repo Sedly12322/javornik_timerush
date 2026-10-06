@@ -24,7 +24,7 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS Release
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --dart-define=OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}
 
       - name: Package into Unsigned IPA
         run: |
