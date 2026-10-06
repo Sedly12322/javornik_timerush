@@ -227,6 +227,7 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
 
       service.invoke("startTracking", {
         'userId': user.id,
+        'accessToken': supabase.auth.currentSession?.accessToken,
         'mountainId': widget.selectedMountainId,
         'routeId': widget.selectedRouteId,
         'distanceKm': distanceKm,
@@ -240,7 +241,7 @@ class NavigationScreenState extends State<NavigationScreen> with TickerProviderS
         'start_time': DateTime.now().toIso8601String(),
       }).eq('id', user.id);
     } catch (e) {
-      print("Chyba startu: $e");
+      debugPrint("Chyba startu: $e");
       setState(() {
         _isTimerRunning = false;
       });

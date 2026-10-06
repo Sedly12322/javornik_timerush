@@ -27,7 +27,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   String get _targetUserId {
-    return widget.viewUserId ?? supabase.auth.currentUser!.id;
+    return widget.viewUserId ?? supabase.auth.currentUser?.id ?? '';
   }
 
   String _formatDuration(int seconds) {
@@ -75,7 +75,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      print("Chyba při nahrávání fotky: $e");
+      debugPrint("Chyba při nahrávání fotky: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Chyba při nahrávání fotky: $e'), backgroundColor: Colors.red),

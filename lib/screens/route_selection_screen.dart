@@ -84,7 +84,7 @@ class RouteSelectionScreenState extends State<RouteSelectionScreen> {
 
       if (mounted) setState(() => mountains = loadedMountains);
     } catch (e) {
-      print('Chyba při načítání hor ze Supabase: $e');
+      debugPrint('Chyba při načítání hor ze Supabase: $e');
     }
   }
 
@@ -235,7 +235,7 @@ class RouteSelectionScreenState extends State<RouteSelectionScreen> {
         }
       }
     } catch (e) {
-      print("Chyba počasí: $e");
+      debugPrint("Chyba počasí: $e");
     } finally {
       if (mounted) setState(() => _isLoadingWeather = false);
     }

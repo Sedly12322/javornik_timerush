@@ -129,7 +129,7 @@ void onStart(ServiceInstance service) async {
         ),
       );
     } catch (e) {
-      print("Chyba zobrazení notifikace: $e");
+      debugPrint("Chyba zobrazení notifikace: $e");
     }
 
     // Časovač
@@ -200,7 +200,7 @@ void onStart(ServiceInstance service) async {
           try {
             await _saveToSupabase(tripData!, finalTimeStr, elapsed.inSeconds);
           } catch (e) {
-            print("SERVICE: Chyba ukládání do Supabase: $e");
+            debugPrint("SERVICE: Chyba ukládání do Supabase: $e");
           }
 
           service.invoke('tripFinished', {'finalTime': finalTimeStr});
@@ -239,25 +239,49 @@ void onStart(ServiceInstance service) async {
 }
 
 Future<void> _saveToSupabase(Map<String, dynamic> data, String timeStr, int seconds) async {
-  final client = SupabaseClient(AppConstants.supabaseUrl, AppConstants.supabaseAnonKey);
+  final token = data['accessToken'] as String?;
+  final client = SupabaseClient(
+    AppConstants.supabaseUrl,
+    AppConstants.supabaseAnonKey,
+    headers: token != null ? {'Authorization': 'Bearer $token'} : {},
+  );
   final uid = data['userId'];
   final mountainId = data['mountainId'];
   final routeId = data['routeId'];
   final double distanceKm = (data['distanceKm'] as num?)?.toDouble() ?? 0.0;
 
-  // 1. Zápis výšlapu
-  await client.from('climbs').insert({
-    'user_id': uid,
-    'mountain_id': mountainId,
-    'trail_id': routeId,
-    'time': timeStr,
-    'time_seconds': seconds,
-    'distance_km': distanceKm,
-    'date': DateTime.now().toIso8601String(),
-    'is_auto_finished': true,
-  });
+  // 1. Zkusit atomickou RPC funkci
+  try {
+    await client.rpc('record_climb', params: {
+      'p_mountain_id': mountainId,
+      'p_trail_id': routeId,
+      'p_time_str': timeStr,
+      'p_time_seconds': seconds,
+      'p_distance_km': distanceKm,
+    });
+    debugPrint("SERVICE: Výšlap úspěšně zaznamenán přes RPC record_climb.");
+    return;
+  } catch (e) {
+    debugPrint("SERVICE: RPC record_climb selhalo ($e), zkouším přímý zápis...");
+  }
 
-  // 2. Aktualizace uživatelského profilu
+  // 2. Fallback: Přímý zápis výšlapu
+  try {
+    await client.from('climbs').insert({
+      'user_id': uid,
+      'mountain_id': mountainId,
+      'trail_id': routeId,
+      'time': timeStr,
+      'time_seconds': seconds,
+      'distance_km': distanceKm,
+      'date': DateTime.now().toIso8601String(),
+      'is_auto_finished': true,
+    });
+  } catch (e) {
+    debugPrint("SERVICE: Chyba přímého zápisu do climbs: $e");
+  }
+
+  // 3. Aktualizace uživatelského profilu
   try {
     final profile = await client
         .from('profiles')
@@ -278,10 +302,10 @@ Future<void> _saveToSupabase(Map<String, dynamic> data, String timeStr, int seco
       }).eq('id', uid);
     }
   } catch (e) {
-    print("SERVICE: Chyba aktualizace profilu: $e");
+    debugPrint("SERVICE: Chyba aktualizace profilu: $e");
   }
 
-  // 3. Aktualizace statistik dané hory
+  // 4. Aktualizace statistik dané hory
   try {
     final mStat = await client
         .from('mountain_stats')
@@ -316,7 +340,7 @@ Future<void> _saveToSupabase(Map<String, dynamic> data, String timeStr, int seco
           .eq('mountain_id', mountainId);
     }
   } catch (e) {
-    print("SERVICE: Chyba aktualizace mountain_stats: $e");
+    debugPrint("SERVICE: Chyba aktualizace mountain_stats: $e");
   }
 }
 

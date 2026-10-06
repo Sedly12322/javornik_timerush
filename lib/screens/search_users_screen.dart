@@ -55,7 +55,7 @@ class SearchUsersScreenState extends State<SearchUsersScreen> {
         });
       }
     } catch (e) {
-      print("Chyba vyhledávání: $e");
+      debugPrint("Chyba vyhledávání: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }

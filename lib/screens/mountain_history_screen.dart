@@ -75,7 +75,7 @@ class MountainHistoryScreenState extends State<MountainHistoryScreen> {
         _applyFilterAndSort();
       }
     } catch (e) {
-      print("CHYBA: $e");
+      debugPrint("CHYBA: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }

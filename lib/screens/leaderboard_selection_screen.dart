@@ -63,7 +63,7 @@ class LeaderboardSelectionScreenState extends State<LeaderboardSelectionScreen> 
         });
       }
     } catch (e) {
-      print('Chyba při načítání hor ze Supabase: $e');
+      debugPrint('Chyba při načítání hor ze Supabase: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }

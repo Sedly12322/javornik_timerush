@@ -13,7 +13,8 @@ class FriendsScreen extends StatefulWidget {
 class FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final FriendService _friendService = FriendService();
-  final String _currentUserId = supabase.auth.currentUser!.id;
+  String get _currentUserId => supabase.auth.currentUser?.id ?? '';
+  final Map<String, Map<String, dynamic>> _profilesCache = {};
 
   @override
   void initState() {
@@ -29,6 +30,11 @@ class FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
+    if (_currentUserId.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text("Pro zobrazení přátel se musíte přihlásit")),
+      );
+    }
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -113,7 +119,12 @@ class FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderS
             final String friendId = friendRecord['friend_id'];
 
             return FutureBuilder<Map<String, dynamic>?>(
-              future: supabase.from('profiles').select().eq('id', friendId).maybeSingle(),
+              future: _profilesCache.containsKey(friendId)
+                  ? Future.value(_profilesCache[friendId])
+                  : supabase.from('profiles').select().eq('id', friendId).maybeSingle().then((val) {
+                      if (val != null) _profilesCache[friendId] = val;
+                      return val;
+                    }),
               builder: (context, userSnapshot) {
                 if (!userSnapshot.hasData) {
                   return Container(

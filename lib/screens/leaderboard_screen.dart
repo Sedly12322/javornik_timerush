@@ -68,7 +68,7 @@ class LeaderboardScreenState extends State<LeaderboardScreen> {
         });
       }
     } catch (e) {
-      print("CHYBA ŽEBŘÍČKU: $e");
+      debugPrint("CHYBA ŽEBŘÍČKU: $e");
       if (mounted) {
         setState(() {
           _errorMessage = "Nepodařilo se načíst žebříček: $e";

@@ -1,20 +1,10 @@
 -- ==========================================================
--- JAVORNÍK TIMERUSH - SUPABASE DATABÁZOVÉ SCHÉMA
+-- JAVORNÍK TIMERUSH - KOMPLETNÍ SUPABASE SCHÉMA A BEZPEČNOST
 -- ==========================================================
--- Tento SQL skript spusťte v Supabase v sekci: SQL Editor -> New Query
+-- Spusťte tento skript v Supabase: Dashboard -> SQL Editor -> New query -> Run
 -- ==========================================================
 
--- 0. VYČIŠTĚNÍ STARÝCH/KONFLIKTNÍCH TABULEK A POHLEDŮ (pokud byly dříve vytvořeny s jinými typy např. UUID)
-DROP MATERIALIZED VIEW IF EXISTS public.mountain_stats CASCADE;
-DROP VIEW IF EXISTS public.mountain_stats CASCADE;
-
-DROP TABLE IF EXISTS public.friends CASCADE;
-DROP TABLE IF EXISTS public.mountain_stats CASCADE;
-DROP TABLE IF EXISTS public.climbs CASCADE;
-DROP TABLE IF EXISTS public.trails CASCADE;
-DROP TABLE IF EXISTS public.mountains CASCADE;
-
--- 1. TABULKA PROFILŮ UŽIVATELŮ
+-- 1. TABULKA PROFILŮ (PROFILES)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text NOT NULL,
@@ -30,7 +20,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   start_time timestamptz
 );
 
--- Zajištění sloupců, pokud již profiles existovala
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discriminator text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_username text;
@@ -46,8 +35,8 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS start_time timestamptz;
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_full_username ON public.profiles(full_username);
 
--- 2. TABULKA HOR
-CREATE TABLE public.mountains (
+-- 2. TABULKA HOR (MOUNTAINS)
+CREATE TABLE IF NOT EXISTS public.mountains (
   id text PRIMARY KEY,
   name text NOT NULL,
   lat double precision NOT NULL,
@@ -55,7 +44,7 @@ CREATE TABLE public.mountains (
 );
 
 -- 3. TABULKA TRAS (TRAILS)
-CREATE TABLE public.trails (
+CREATE TABLE IF NOT EXISTS public.trails (
   id text PRIMARY KEY,
   mountain_id text NOT NULL REFERENCES public.mountains(id) ON DELETE CASCADE,
   name text NOT NULL,
@@ -66,7 +55,7 @@ CREATE TABLE public.trails (
 );
 
 -- 4. TABULKA VÝŠLAPŮ (CLIMBS)
-CREATE TABLE public.climbs (
+CREATE TABLE IF NOT EXISTS public.climbs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   mountain_id text NOT NULL,
@@ -79,9 +68,10 @@ CREATE TABLE public.climbs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_climbs_leaderboard ON public.climbs(mountain_id, trail_id, time_seconds);
+CREATE INDEX IF NOT EXISTS idx_climbs_user ON public.climbs(user_id);
 
 -- 5. TABULKA STATISTIK PODLE HOR (MOUNTAIN_STATS)
-CREATE TABLE public.mountain_stats (
+CREATE TABLE IF NOT EXISTS public.mountain_stats (
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   mountain_id text NOT NULL,
   climbs_count integer DEFAULT 0,
@@ -92,7 +82,7 @@ CREATE TABLE public.mountain_stats (
 );
 
 -- 6. TABULKA PŘÁTELSTVÍ (FRIENDS)
-CREATE TABLE public.friends (
+CREATE TABLE IF NOT EXISTS public.friends (
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   friend_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   status text NOT NULL CHECK (status IN ('sent', 'received', 'accepted')),
@@ -100,15 +90,18 @@ CREATE TABLE public.friends (
   PRIMARY KEY (user_id, friend_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_friends_user ON public.friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend ON public.friends(friend_id);
+
 -- ==========================================================
--- STORAGE BUCKET PRO PROFILOVÉ FOTKY
+-- 7. STORAGE BUCKET PRO PROFILOVÉ FOTKY
 -- ==========================================================
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('user_images', 'user_images', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- ==========================================================
--- ROW LEVEL SECURITY (RLS) & POLICIES
+-- 8. ROW LEVEL SECURITY (RLS)
 -- ==========================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mountains ENABLE ROW LEVEL SECURITY;
@@ -117,54 +110,235 @@ ALTER TABLE public.climbs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mountain_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friends ENABLE ROW LEVEL SECURITY;
 
--- Profily
-DROP POLICY IF EXISTS "Veřejné čtení profilů" ON public.profiles;
-CREATE POLICY "Veřejné čtení profilů" ON public.profiles FOR SELECT USING (true);
+-- Profily: všichni mohou číst (pro vyhledávání, žebříčky a přátele), upravovat pouze vlastník
+DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
+CREATE POLICY "profiles_select_public" ON public.profiles FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Uživatel může vkládat profil" ON public.profiles;
-CREATE POLICY "Uživatel může vkládat profil" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id OR auth.uid() IS NULL);
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Uživatel může upravovat svůj profil" ON public.profiles;
-CREATE POLICY "Uživatel může upravovat svůj profil" ON public.profiles FOR ALL USING (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- Hory
-DROP POLICY IF EXISTS "Veřejné čtení hor" ON public.mountains;
-CREATE POLICY "Veřejné čtení hor" ON public.mountains FOR SELECT USING (true);
+-- Hory: veřejné čtení, úpravy pouze admin/service_role
+DROP POLICY IF EXISTS "mountains_select_public" ON public.mountains;
+CREATE POLICY "mountains_select_public" ON public.mountains FOR SELECT USING (true);
 
--- Trasy
-DROP POLICY IF EXISTS "Veřejné čtení tras" ON public.trails;
-CREATE POLICY "Veřejné čtení tras" ON public.trails FOR SELECT USING (true);
+-- Trasy: veřejné čtení, úpravy pouze admin/service_role
+DROP POLICY IF EXISTS "trails_select_public" ON public.trails;
+CREATE POLICY "trails_select_public" ON public.trails FOR SELECT USING (true);
 
--- Výšlapy
-DROP POLICY IF EXISTS "Veřejné čtení výšlapů" ON public.climbs;
-CREATE POLICY "Veřejné čtení výšlapů" ON public.climbs FOR SELECT USING (true);
+-- Výšlapy: veřejné čtení pro žebříčky a profily, vkládání a úpravy pouze pro přihlášeného uživatele pro jeho data
+DROP POLICY IF EXISTS "climbs_select_public" ON public.climbs;
+CREATE POLICY "climbs_select_public" ON public.climbs FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Uživatel může vkládat výšlapy" ON public.climbs;
-CREATE POLICY "Uživatel může vkládat výšlapy" ON public.climbs FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.uid() IS NULL);
+DROP POLICY IF EXISTS "climbs_insert_own" ON public.climbs;
+CREATE POLICY "climbs_insert_own" ON public.climbs FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Statistiky hor
-DROP POLICY IF EXISTS "Veřejné čtení statistik hor" ON public.mountain_stats;
-CREATE POLICY "Veřejné čtení statistik hor" ON public.mountain_stats FOR SELECT USING (true);
+DROP POLICY IF EXISTS "climbs_update_own" ON public.climbs;
+CREATE POLICY "climbs_update_own" ON public.climbs FOR UPDATE USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Uživatel může upravovat statistiky hor" ON public.mountain_stats;
-CREATE POLICY "Uživatel může upravovat statistiky hor" ON public.mountain_stats FOR ALL USING (auth.uid() = user_id OR auth.uid() IS NULL);
+DROP POLICY IF EXISTS "climbs_delete_own" ON public.climbs;
+CREATE POLICY "climbs_delete_own" ON public.climbs FOR DELETE USING (auth.uid() = user_id);
 
--- Přátelé
-DROP POLICY IF EXISTS "Správa přátelství" ON public.friends;
-CREATE POLICY "Správa přátelství" ON public.friends FOR ALL USING (auth.uid() = user_id OR auth.uid() = friend_id);
+-- Statistiky hor: veřejné čtení, zápis pouze vlastník
+DROP POLICY IF EXISTS "mountain_stats_select_public" ON public.mountain_stats;
+CREATE POLICY "mountain_stats_select_public" ON public.mountain_stats FOR SELECT USING (true);
 
--- Storage (Fotky)
-DROP POLICY IF EXISTS "Veřejné stahování profilových fotek" ON storage.objects;
-CREATE POLICY "Veřejné stahování profilových fotek" ON storage.objects FOR SELECT USING (bucket_id = 'user_images');
+DROP POLICY IF EXISTS "mountain_stats_modify_own" ON public.mountain_stats;
+CREATE POLICY "mountain_stats_modify_own" ON public.mountain_stats FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Nahrávání profilových fotek" ON storage.objects;
-CREATE POLICY "Nahrávání profilových fotek" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'user_images');
+-- Přátelé: uživatel vidí své žádosti a své přátele
+DROP POLICY IF EXISTS "friends_select" ON public.friends;
+CREATE POLICY "friends_select" ON public.friends FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
 
-DROP POLICY IF EXISTS "Aktualizace profilových fotek" ON storage.objects;
-CREATE POLICY "Aktualizace profilových fotek" ON storage.objects FOR UPDATE USING (bucket_id = 'user_images');
+DROP POLICY IF EXISTS "friends_modify" ON public.friends;
+CREATE POLICY "friends_modify" ON public.friends FOR ALL USING (auth.uid() = user_id OR auth.uid() = friend_id);
+
+-- Storage (Profilové obrázky)
+DROP POLICY IF EXISTS "storage_select_user_images" ON storage.objects;
+CREATE POLICY "storage_select_user_images" ON storage.objects FOR SELECT USING (bucket_id = 'user_images');
+
+DROP POLICY IF EXISTS "storage_insert_user_images" ON storage.objects;
+CREATE POLICY "storage_insert_user_images" ON storage.objects FOR INSERT WITH CHECK (
+  bucket_id = 'user_images' AND auth.role() = 'authenticated'
+);
+
+DROP POLICY IF EXISTS "storage_update_user_images" ON storage.objects;
+CREATE POLICY "storage_update_user_images" ON storage.objects FOR UPDATE USING (
+  bucket_id = 'user_images' AND auth.role() = 'authenticated'
+);
 
 -- ==========================================================
--- UKÁZKOVÁ VÝCHOZÍ DATA
+-- 9. SERVEROVÉ RPC FUNKCE (BEZPEČNÉ A ATOMICKÉ OPERACE)
+-- ==========================================================
+
+-- A) Automatické vytvoření profilu při registraci (Google OAuth i Email)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+  v_name text;
+  v_disc text;
+BEGIN
+  v_name := COALESCE(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    split_part(new.email, '@', 1),
+    'Horal'
+  );
+  v_disc := '#' || floor(1000 + random() * 9000)::text;
+
+  INSERT INTO public.profiles (
+    id,
+    username,
+    discriminator,
+    full_username,
+    email,
+    profile_picture,
+    created_at,
+    total_climbs,
+    total_time_seconds,
+    total_distance,
+    is_running
+  ) VALUES (
+    new.id,
+    v_name,
+    v_disc,
+    v_name || v_disc,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', null),
+    now(),
+    0,
+    0,
+    0.0,
+    false
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- B) Atomické odeslání žádosti o přátelství
+CREATE OR REPLACE FUNCTION public.send_friend_request(target_user_id uuid)
+RETURNS void AS $$
+DECLARE
+  v_me uuid := auth.uid();
+BEGIN
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Uživatel není přihlášen';
+  END IF;
+  IF v_me = target_user_id THEN
+    RAISE EXCEPTION 'Nemůžete přidat sám sebe';
+  END IF;
+
+  -- 1. U odesílatele
+  INSERT INTO public.friends (user_id, friend_id, status, created_at)
+  VALUES (v_me, target_user_id, 'sent', now())
+  ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'sent';
+
+  -- 2. U příjemce
+  INSERT INTO public.friends (user_id, friend_id, status, created_at)
+  VALUES (target_user_id, v_me, 'received', now())
+  ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'received';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- C) Atomické přijetí žádosti o přátelství
+CREATE OR REPLACE FUNCTION public.accept_friend_request(target_user_id uuid)
+RETURNS void AS $$
+DECLARE
+  v_me uuid := auth.uid();
+BEGIN
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Uživatel není přihlášen';
+  END IF;
+
+  UPDATE public.friends
+  SET status = 'accepted'
+  WHERE (user_id = v_me AND friend_id = target_user_id)
+     OR (user_id = target_user_id AND friend_id = v_me);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- D) Atomické odebrání přítele / zrušení žádosti
+CREATE OR REPLACE FUNCTION public.remove_friend(target_user_id uuid)
+RETURNS void AS $$
+DECLARE
+  v_me uuid := auth.uid();
+BEGIN
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Uživatel není přihlášen';
+  END IF;
+
+  DELETE FROM public.friends
+  WHERE (user_id = v_me AND friend_id = target_user_id)
+     OR (user_id = target_user_id AND friend_id = v_me);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- E) Atomický zápis výšlapu a aktualizace všech statistik v jedné transakci
+CREATE OR REPLACE FUNCTION public.record_climb(
+  p_mountain_id text,
+  p_trail_id text,
+  p_time_str text,
+  p_time_seconds integer,
+  p_distance_km double precision
+)
+RETURNS void AS $$
+DECLARE
+  v_me uuid := auth.uid();
+  v_cur_best integer;
+BEGIN
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Uživatel není přihlášen';
+  END IF;
+
+  -- 1. Zápis výšlapu
+  INSERT INTO public.climbs (
+    user_id, mountain_id, trail_id, time, time_seconds, distance_km, date, is_auto_finished
+  ) VALUES (
+    v_me, p_mountain_id, p_trail_id, p_time_str, p_time_seconds, p_distance_km, now(), true
+  );
+
+  -- 2. Aktualizace celkových statistik uživatele
+  UPDATE public.profiles
+  SET
+    total_climbs = COALESCE(total_climbs, 0) + 1,
+    total_time_seconds = COALESCE(total_time_seconds, 0) + p_time_seconds,
+    total_distance = COALESCE(total_distance, 0.0) + p_distance_km,
+    is_running = false
+  WHERE id = v_me;
+
+  -- 3. Aktualizace statistik dané hory
+  SELECT best_time_seconds INTO v_cur_best
+  FROM public.mountain_stats
+  WHERE user_id = v_me AND mountain_id = p_mountain_id;
+
+  IF NOT FOUND THEN
+    INSERT INTO public.mountain_stats (
+      user_id, mountain_id, climbs_count, last_climb_date, best_time_seconds, best_time_str
+    ) VALUES (
+      v_me, p_mountain_id, 1, now(), p_time_seconds, p_time_str
+    );
+  ELSE
+    UPDATE public.mountain_stats
+    SET
+      climbs_count = climbs_count + 1,
+      last_climb_date = now(),
+      best_time_seconds = LEAST(best_time_seconds, p_time_seconds),
+      best_time_str = CASE WHEN p_time_seconds < best_time_seconds THEN p_time_str ELSE best_time_str END
+    WHERE user_id = v_me AND mountain_id = p_mountain_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================================
+-- 10. VÝCHOZÍ DATA HOR A TRAS (pokud ještě neexistují)
 -- ==========================================================
 INSERT INTO public.mountains (id, name, lat, lng)
 VALUES ('Velký Javorník', 'Velký Javorník', 49.5273, 18.1633)
